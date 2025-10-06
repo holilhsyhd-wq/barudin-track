@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Tracking System (Supabase)</title>
+    <style>
+        :root {
+            --primary: #4a6fa5;
+            --secondary: #166088;
+            --accent: #4fc3a1;
+            --light: #f8f9fa;
+            --dark: #343a40;
+            --danger: #e74c3c;
+            --success: #2ecc71;
+            --warning: #f39c12;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: var(--dark);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 20px 0;
+            text-align: center;
+            border-radius: 0 0 10px 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            padding: 25px;
+            margin-bottom: 25px;
+            transition: transform 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .card-title {
+            font-size: 1.5rem;
+            color: var(--primary);
+            margin-bottom: 15px;
+            border-bottom: 2px solid var(--accent);
+            padding-bottom: 10px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--secondary);
+        }
+        
+        input, textarea, select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+            transition: border 0.3s;
+        }
+        
+        input:focus, textarea:focus, select:focus {
+            border-color: var(--accent);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(79, 195, 161, 0.2);
+        }
+        
+        button {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: background 0.3s, transform 0.2s;
+        }
+        
+        button:hover {
+            background: #3da58a;
+            transform: translateY(-2px);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .btn-primary {
+            background: var(--primary);
+        }
+        
+        .btn-primary:hover {
+            background: #3a5a8c;
+        }
+        
+        .btn-danger {
+            background: var(--danger);
+        }
+        
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+        
+        .tracking-link {
+            background: var(--light);
+            border: 1px dashed var(--primary);
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+            word-break: break-all;
+        }
+        
+        .link-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .tracking-results {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .result-card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        .result-header {
+            background: var(--primary);
+            color: white;
+            padding: 12px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .result-body {
+            padding: 15px;
+        }
+        
+        .result-photo {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+        }
+        
+        .result-info {
+            margin-bottom: 8px;
+            padding: 5px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .info-label {
+            font-weight: 600;
+            color: var(--secondary);
+        }
+        
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .tab {
+            padding: 12px 25px;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--dark);
+            transition: all 0.3s;
+        }
+        
+        .tab.active {
+            color: var(--primary);
+            border-bottom: 3px solid var(--primary);
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 5px;
+            color: white;
+            font-weight: 600;
+            z-index: 1000;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.3s;
+        }
+        
+        .notification.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        
+        .notification.success {
+            background: var(--success);
+        }
+        
+        .notification.error {
+            background: var(--danger);
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #6c757d;
+        }
+        
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            color: #dee2e6;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--primary);
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: var(--primary);
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @media (max-width: 768px) {
+            .tracking-results {
+                grid-template-columns: 1fr;
+            }
+            
+            .tabs {
+                flex-direction: column;
+            }
+            
+            .tab {
+                border-bottom: 1px solid #ddd;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+    <!-- Supabase CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>Admin Panel - Tracking System (Supabase)</h1>
+            <p class="subtitle">Gratis selamanya dengan Supabase Free Tier</p>
+        </div>
+    </header>
+    
+    <div class="container">
+        <!-- Stats Overview -->
+        <div class="stats-grid" id="stats-container">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>Loading statistics...</p>
+            </div>
+        </div>
+        
+        <div class="tabs">
+            <div class="tab active" data-tab="create">Buat Link</div>
+            <div class="tab" data-tab="links">Daftar Link</div>
+            <div class="tab" data-tab="results">Hasil Pelacakan</div>
+        </div>
+        
+        <!-- Tab Buat Link -->
+        <div id="create" class="tab-content active">
+            <div class="card">
+                <h2 class="card-title">Buat Link Pelacakan Baru</h2>
+                <form id="tracking-form">
+                    <div class="form-group">
+                        <label for="link-name">Nama Link</label>
+                        <input type="text" id="link-name" placeholder="Contoh: Promosi Produk A" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="destination-url">URL Tujuan</label>
+                        <input type="url" id="destination-url" placeholder="https://example.com" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="link-description">Deskripsi (Opsional)</label>
+                        <textarea id="link-description" rows="3" placeholder="Deskripsi untuk link ini"></textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn-primary">Buat Link Pelacakan</button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Tab Daftar Link -->
+        <div id="links" class="tab-content">
+            <div class="card">
+                <h2 class="card-title">Daftar Link Pelacakan</h2>
+                <div id="links-container">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Loading links...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tab Hasil Pelacakan -->
+        <div id="results" class="tab-content">
+            <div class="card">
+                <h2 class="card-title">Hasil Pelacakan</h2>
+                <button id="refresh-results" class="btn-primary" style="margin-bottom: 15px;">
+                    🔄 Refresh Data
+                </button>
+                <div class="tracking-results" id="results-container">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Loading results...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="notification" class="notification"></div>
+    
+    <script src="supabase-config.js"></script>
+    <script>
+        // KONFIGURASI DOMAIN - GANTI DENGAN DOMAIN VERCELL ANDA
+        const TRACKING_DOMAIN = 'https://your-domain.vercel.app';
+        const ADMIN_DOMAIN = window.location.origin;
+
+        // Elemen DOM
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+        const trackingForm = document.getElementById('tracking-form');
+        const linksContainer = document.getElementById('links-container');
+        const resultsContainer = document.getElementById('results-container');
+        const statsContainer = document.getElementById('stats-container');
+        const refreshResultsBtn = document.getElementById('refresh-results');
+        const notification = document.getElementById('notification');
+        
+        // Fungsi untuk menampilkan notifikasi
+        function showNotification(message, type = 'success') {
+            notification.textContent = message;
+            notification.className = `notification ${type}`;
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 4000);
+        }
+        
+        // Fungsi untuk mengubah tab
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const tabId = tab.getAttribute('data-tab');
+                
+                tabs.forEach(t => t.classList.remove('active'));
+                tabContents.forEach(tc => tc.classList.remove('active'));
+                
+                tab.classList.add('active');
+                document.getElementById(tabId).classList.add('active');
+                
+                if (tabId === 'links') {
+                    loadTrackingLinks();
+                } else if (tabId === 'results') {
+                    loadTrackingResults();
+                }
+            });
+        });
+        
+        // Fungsi untuk menghasilkan ID unik
+        function generateId() {
+            return 'id_' + Math.random().toString(36).substr(2, 9);
+        }
+        
+        // Fungsi untuk membuat link pelacakan dengan Supabase
+        trackingForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const linkName = document.getElementById('link-name').value;
+            const destinationUrl = document.getElementById('destination-url').value;
+            const description = document.getElementById('link-description').value;
+            
+            const linkId = generateId();
+            const trackingUrl = `${TRACKING_DOMAIN}/tracking.html?track=${linkId}`;
+            
+            const linkData = {
+                id: linkId,
+                name: linkName,
+                destination: destinationUrl,
+                description: description,
+                tracking_url: trackingUrl
+            };
+            
+            // Tampilkan loading
+            const submitBtn = trackingForm.querySelector('button[type="submit"]');
+            const originalText = submitBtn.textContent;
+            submitBtn.innerHTML = '⏳ Membuat...';
+            submitBtn.disabled = true;
+            
+            try {
+                // Simpan ke Supabase
+                const result = await TrackingDB.createLink(linkData);
+                
+                if (result.success) {
+                    showNotification('Link pelacakan berhasil dibuat!');
+                    trackingForm.reset();
+                    
+                    // Refresh stats dan daftar link
+                    loadStats();
+                    loadTrackingLinks();
+                } else {
+                    throw new Error(result.error);
+                }
+            } catch (error) {
+                console.error('Error creating link:', error);
+                showNotification('Gagal membuat link: ' + error.message, 'error');
+            } finally {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
+        });
+        
+        // Fungsi untuk memuat daftar link dari Supabase
+        async function loadTrackingLinks() {
+            linksContainer.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Loading links...</p>
+                </div>
+            `;
+            
+            try {
+                const result = await TrackingDB.getLinks();
+                
+                if (result.success) {
+                    if (result.data.length === 0) {
+                        linksContainer.innerHTML = `
+                            <div class="empty-state">
+                                <i>📎</i>
+                                <p>Belum ada link yang dibuat</p>
+                            </div>
+                        `;
+                        return;
+                    }
+                    
+                    linksContainer.innerHTML = '';
+                    
+                    result.data.forEach(link => {
+                        const linkElement = document.createElement('div');
+                        linkElement.className = 'tracking-link';
+                        linkElement.innerHTML = `
+                            <h3>${link.name}</h3>
+                            <p><strong>URL Pelacakan:</strong> ${link.tracking_url}</p>
+                            <p><strong>Tujuan:</strong> ${link.destination}</p>
+                            ${link.description ? `<p><strong>Deskripsi:</strong> ${link.description}</p>` : ''}
+                            <p><strong>Dibuat:</strong> ${new Date(link.created_at).toLocaleString()}</p>
+                            <div class="link-actions">
+                                <button class="btn-primary copy-link" data-url="${link.tracking_url}">Salin Link</button>
+                                <button class="btn-danger delete-link" data-id="${link.id}">Hapus</button>
+                            </div>
+                        `;
+                        
+                        linksContainer.appendChild(linkElement);
+                    });
+                    
+                    // Event listener untuk tombol salin
+                    document.querySelectorAll('.copy-link').forEach(button => {
+                        button.addEventListener('click', function() {
+                            const url = this.getAttribute('data-url');
+                            navigator.clipboard.writeText(url).then(() => {
+                                showNotification('Link berhasil disalin!');
+                            });
+                        });
+                    });
+                    
+                    // Event listener untuk tombol hapus
+                    document.querySelectorAll('.delete-link').forEach(button => {
+                        button.addEventListener('click', async function() {
+                            const id = this.getAttribute('data-id');
+                            if (confirm('Apakah Anda yakin ingin menghapus link ini?')) {
+                                const result = await TrackingDB.deleteLink(id);
+                                if (result.success) {
+                                    showNotification('Link berhasil dihapus!');
+                                    loadTrackingLinks();
+                                    loadStats();
+                                } else {
+                                    showNotification('Gagal menghapus link', 'error');
+                                }
+                            }
+                        });
+                    });
+                } else {
+                    throw new Error(result.error);
+                }
+            } catch (error) {
+                console.error('Error loading links:', error);
+                linksContainer.innerHTML = `
+                    <div class="empty-state">
+                        <i>❌</i>
+                        <p>Error loading links: ${error.message}</p>
+                        <button onclick="loadTrackingLinks()" class="btn-primary">Coba Lagi</button>
+                    </div>
+                `;
+            }
+        }
+        
+        // Fungsi untuk memuat hasil pelacakan dari Supabase
+        async function loadTrackingResults() {
+            resultsContainer.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Loading results...</p>
+                </div>
+            `;
+            
+            try {
+                const result = await TrackingDB.getResults();
+                
+                if (result.success) {
+                    if (result.data.length === 0) {
+                        resultsContainer.innerHTML = `
+                            <div class="empty-state">
+                                <i>📊</i>
+                                <p>Belum ada data pelacakan</p>
+                            </div>
+                        `;
+                        return;
+                    }
+                    
+                    resultsContainer.innerHTML = '';
+                    
+                    result.data.forEach(tracking => {
+                        const linkInfo = tracking.tracking_links;
+                        const resultElement = document.createElement('div');
+                        resultElement.className = 'result-card';
+                        resultElement.innerHTML = `
+                            <div class="result-header">
+                                <span>${linkInfo?.name || tracking.link_name || 'Unknown Link'}</span>
+                                <small>${new Date(tracking.created_at).toLocaleString()}</small>
+                            </div>
+                            <div class="result-body">
+                                ${tracking.photo ? `<img src="${tracking.photo}" class="result-photo" alt="Foto pengguna" onclick="viewImage('${tracking.photo}')" style="cursor: pointer;">` : ''}
+                                <div class="result-info">
+                                    <span class="info-label">Lokasi:</span> 
+                                    ${tracking.location ? `
+                                        ${tracking.location.latitude}, ${tracking.location.longitude}
+                                        <br><small>Akurasi: ±${tracking.location.accuracy}m</small>
+                                    ` : 'Tidak tersedia'}
+                                </div>
+                                <div class="result-info">
+                                    <span class="info-label">IP Address:</span> ${tracking.ip || 'Tidak tersedia'}
+                                </div>
+                                <div class="result-info">
+                                    <span class="info-label">Perangkat:</span> ${tracking.device || 'Tidak tersedia'}
+                                </div>
+                                <div class="result-info">
+                                    <span class="info-label">Browser:</span> ${tracking.browser || 'Tidak tersedia'}
+                                </div>
+                                <div class="result-info">
+                                    <span class="info-label">Screen:</span> ${tracking.screen || 'Tidak tersedia'}
+                                </div>
+                                <div class="result-info">
+                                    <span class="info-label">Bahasa:</span> ${tracking.language || 'Tidak tersedia'}
+                                </div>
+                            </div>
+                        `;
+                        
+                        resultsContainer.appendChild(resultElement);
+                    });
+                } else {
+                    throw new Error(result.error);
+                }
+            } catch (error) {
+                console.error('Error loading results:', error);
+                resultsContainer.innerHTML = `
+                    <div class="empty-state">
+                        <i>❌</i>
+                        <p>Error loading results: ${error.message}</p>
+                        <button onclick="loadTrackingResults()" class="btn-primary">Coba Lagi</button>
+                    </div>
+                `;
+            }
+        }
+        
+        // Fungsi untuk memuat statistik
+        async function loadStats() {
+            try {
+                const result = await TrackingDB.getStats();
+                
+                if (result.success) {
+                    const stats = result.data;
+                    statsContainer.innerHTML = `
+                        <div class="stat-card">
+                            <div class="stat-number">${stats.totalLinks}</div>
+                            <div class="stat-label">Total Link</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">${stats.totalResults}</div>
+                            <div class="stat-label">Total Tracking</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">${stats.todayResults}</div>
+                            <div class="stat-label">Hari Ini</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">${stats.withLocation}</div>
+                            <div class="stat-label">Dengan Lokasi</div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+                statsContainer.innerHTML = `
+                    <div class="empty-state">
+                        <i>❌</i>
+                        <p>Error loading statistics</p>
+                    </div>
+                `;
+            }
+        }
+        
+        // Fungsi untuk melihat gambar full size
+        function viewImage(imageUrl) {
+            window.open(imageUrl, '_blank');
+        }
+        
+        // Event listener untuk refresh results
+        refreshResultsBtn.addEventListener('click', loadTrackingResults);
+        
+        // Inisialisasi aplikasi
+        document.addEventListener('DOMContentLoaded', function() {
+            loadStats();
+            loadTrackingLinks();
+        });
+    </script>
+</body>
+</html>
