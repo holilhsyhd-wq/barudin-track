@@ -1,6 +1,6 @@
 // Supabase Configuration - GANTI DENGAN CONFIG ANDA
-const SUPABASE_URL = 'https://vkappyrkvwjtkglxlqvf.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrYXBweXJrdndqdGtnbHhscXZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk3NjczNTUsImV4cCI6MjA3NTM0MzM1NX0.UrTEn-7pFNV6sqPKB74TXqi4ajYOjT79EI3i6sEHy8Q';
+const SUPABASE_URL = 'https://woeojsjkwzwewaxcdtrq.supabase.co';
+const SUPABASE_ANON_KEY = '.eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndvZW9qc2prd3p3ZXdheGNkdHJxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk3NjkzODMsImV4cCI6MjA3NTM0NTM4M30.p7Pyus1p3Aixp5WOlyqNRaOL5jC4N9PA4T7OrMQAKDQ';
 
 // Initialize Supabase client
 const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
